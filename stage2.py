@@ -40,7 +40,7 @@ circle = {'radius': 30,
           'speed_y': 2}
 
 
-def draw_map(screen, map):
+def draw_map(screen: pygame.Surface, map: list) -> None:
     for i_y, row in enumerate(map):
         for i_x, cell in enumerate(row):
             pygame.draw.rect(screen, (0, 0, 0),
@@ -49,6 +49,43 @@ def draw_map(screen, map):
             pygame.draw.rect(screen, cell_color[cell],
                              (i_x * cell_width + 1, i_y * cell_heigth + 1,
                               cell_width - 2, cell_heigth - 2))
+
+
+def next_step_map(old_map: list, rows: int, columns: int) -> list:
+    """
+    Calculates next map based on automata rules
+    - White cells turn green if they have a number of adjacent green cells
+      greater than 1 and less than 5. Otherwise, they remain white.
+    - Green cells remain green if they have a number of green adjacent cells
+      greater than 3 and less than 6. Otherwise they become white.
+
+    Args:
+        old_map (list[][] of int): map on actual situation
+        rows (int): how many rows are in the matrix
+        columns (int): how many columns in the matrix
+    Returns:
+        list[][] of int: new map after iteration
+    """
+    new_map = []
+    # check corners
+    c00 = old_map[1][0] + old_map[1][1] + old_map[0][1]
+    c01 = (old_map[1][columns - 1] +
+           old_map[1][columns - 2] +
+           old_map[0][columns - 2])
+    c10 = (old_map[rows - 2][0] +
+           old_map[rows - 2][1] +
+           old_map[rows - 1][1])
+    c11 = (old_map[rows - 2][columns - 1] +
+           old_map[rows - 2][columns - 2] +
+           old_map[rows - 1][columns - 2])
+
+    for iy in range(1, len(old_map) - 1):
+        new_row = (old_map[rows - 2][columns - 1] +
+                   old_map[rows - 2][columns - 2] +
+                   old_map[rows - 1][columns - 2])
+        for ix in range(1, len(old_map[0]) - 1):
+            # check adjacents
+            pass
 
 
 # %% Game loop
@@ -63,23 +100,8 @@ while running:
     # draw the map
     draw_map(screen, init_map)
 
-    # Draw a solid blue circle in the center
-    pygame.draw.circle(screen, (0, 0, 255), (circle['pos_x'],
-                                             circle['pos_y']),
-                       circle['radius'])
-
     # Flip the display (render)
     pygame.display.flip()
-
-    # Update position
-    circle['pos_x'] += circle['speed_x']
-    circle['pos_y'] += circle['speed_y']
-    if ((circle['pos_x'] > (width - circle['radius'])) |
-       (circle['pos_x'] < circle['radius'])):
-        circle['speed_x'] *= -1
-    if ((circle['pos_y'] > (height - circle['radius'])) |
-       (circle['pos_y'] < circle['radius'])):
-        circle['speed_y'] *= -1
 
     # generate framerate
     fpsClock.tick(fps)
