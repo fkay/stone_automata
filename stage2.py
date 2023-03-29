@@ -6,7 +6,7 @@ Uses pygame to visualize results
 # %% Import libraries
 import pygame
 from automata import load_init_map, next_step_map, draw_map
-from astar import solve_Astar
+from a_star import A_star
 
 init_map = load_init_map()
 
@@ -16,6 +16,10 @@ hero = {
 }
 
 hero_moves = []
+
+# Solve the path
+solver = A_star(init_map)
+solution = solver.solve()
 
 # %% Prepare pygame
 # Pygame Configuration

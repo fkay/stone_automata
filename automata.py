@@ -52,6 +52,8 @@ def next_step_map(old_map: list) -> list:
     Returns:
         list[][] of int: new map after iteration
     """
+    # test
+    return old_map
     rows = len(old_map)
     columns = len(old_map[0])
     new_map = []
@@ -90,6 +92,26 @@ def next_step_map(old_map: list) -> list:
             new_row.append(new_cell)
         new_map.append(new_row)
     # assure start and end colors
+    old_map[0][0] = 3
+    old_map[rows - 1][columns - 1] = 4
     new_map[0][0] = 3
     new_map[rows - 1][columns - 1] = 4
     return new_map
+
+
+def find_postion(map: list[list[int]], value: int) -> dict:
+    """
+    find scpecif value on the map matrix
+
+    Args:
+        map (list[list[int]]): map organized in 2d list of int
+        value (int): value being searched
+
+    Returns:
+        dict: (x, y) where value found or None cause not find
+    """
+    for iy, y in enumerate(map):
+        for ix, x in enumerate(y):
+            if x == value:
+                return {'x': ix, 'y': iy}
+    return None
