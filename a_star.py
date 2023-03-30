@@ -5,7 +5,7 @@ from graph import Graph, Node
 
 class A_star:
     def __init__(self, init_map: list[list[int]]):
-        self.maps = [init_map]      # maps for every timeframe
+        self.maps = [init_map]  # maps for every time frame
         self.start = find_postion(init_map, 3)
         self.target = find_postion(init_map, 4)
         self.graph = Graph()
@@ -26,25 +26,32 @@ class A_star:
         for y, x in [(-1, 0), (1, 0),
                      (0, -1), (0, 1)]:
             if (node.y + y >= 0 and
-               node.y + y < self.rows and
-               node.x + x >= 0 and
-               node.x + x < self.cols and
-               self.maps[next_t][node.y + y][node.x + x] == 0):
+                node.y + y < self.rows and
+                node.x + x >= 0 and
+                node.x + x < self.cols and
+                (self.maps[next_t][node.y + y][node.x + x] == 0 or
+                 self.maps[next_t][node.y + y][node.x + x] == 4)):
                 new_node = Node(node.x + x, node.y + y, next_t, node)
-                # if node already exist on graph, append it
-                if self.graph.find_node(new_node) is None:
-                    self.calculate_distances(new_node)
-                    self.graph.add_node(new_node)
-                    children.append(new_node)
+                # if self.graph.find_node(new_node) is None:
+                #     self.calculate_distances(new_node)
+                #     self.graph.add_node(new_node)
+                children.append(new_node)
         return children
+
+    def get_distance(self, node_from: Node, node_to: Node):
+        dist = (abs(node_from.x - node_to.x) +
+                abs(node_from.y - node_to.y))
+        return dist
 
     def calculate_distances(self, node: Node):
         dist_start = math.sqrt((node.x - self.start['x'])**2 +
-                               (node.y - self.start['y'])**2) + node.t
+                               (node.y - self.start['y'])**2 +
+                               (node.t/1000))
         dist_target = math.sqrt((node.x - self.target['x'])**2 +
                                 (node.y - self.target['y'])**2)
         node.dist_start = dist_start
-        node.heuristic = dist_start + dist_target
+        node.dist_target = dist_target
+        node.heuristic = node.g_cost + dist_target
 
     def calculate_movements(self, path: list[Node]) -> list[chr]:
         moves = []
@@ -72,6 +79,7 @@ class A_star:
         Returns:
             list[chr]: list with the movevements to solve
         """
+        nodes_visited = 0
         # put root node as starting node
         open_nodes = [self.graph.nodes[0]]
         # closed nodes empty
@@ -82,9 +90,24 @@ class A_star:
                 print('No solution found')
                 return []
 
+            nodes_visited += 1
+
             open_nodes.sort()
             actual_node = open_nodes.pop(0)
             close_nodes.append(actual_node)
+
+            if nodes_visited % 1000 == 0:
+                print(f'nodes visited: {nodes_visited}')
+                print(f'maps generated: {len(self.maps)}')
+                print(f'graph_size: {len(self.graph.nodes)}')
+                print(f'open nodes: {len(open_nodes)}')
+                print(f'close nodes: {len(close_nodes)}')
+                print(f'Actual node: x:{actual_node.x} | ' +
+                      f'y: {actual_node.y} | ' +
+                      f't: {actual_node.t} | ' +
+                      f'g_cost: {actual_node.g_cost} | ' +
+                      f'heuristic: {actual_node.heuristic}')
+
             if (actual_node.x == self.target['x'] and
                actual_node.y == self.target['y']):
                 # found solution
@@ -94,7 +117,22 @@ class A_star:
             # open next steps of this node
             next_nodes = self.create_children(actual_node)
             for next_node in next_nodes:
-                if (next_node not in close_nodes and
+                if next_node in close_nodes:
+                    continue
+                old_node = self.graph.find_node(next_node)
+                new_dist_cost = (actual_node.g_cost +
+                                 self.get_distance(actual_node,
+                                                   next_node)
+                                 )
+                if (old_node is None or
+                    new_dist_cost < old_node.g_cost or
                    next_node not in open_nodes):
-                    # only open with already not visited
-                    open_nodes.append(next_node)
+                    next_node.g_cost = new_dist_cost
+                    self.calculate_distances(next_node)
+                    if old_node is None:
+                        # not in the closed an not in graph is not opened
+                        open_nodes.append(next_node)
+                        self.graph.add_node(next_node)
+                    else:
+                        # update previous node with smaller g_cost
+                        old_node.copy(next_node)

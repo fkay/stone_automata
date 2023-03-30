@@ -5,21 +5,27 @@ Uses pygame to visualize results
 
 # %% Import libraries
 import pygame
+from datetime import datetime
 from automata import load_init_map, next_step_map, draw_map
 from a_star import A_star
+
+
+def draw_text(screen: pygame.Surface, font: pygame.font.Font,
+              color: tuple[int, int, int],
+              text: str, x: int, y: int) -> None:
+    img = font.render(text, True, color)
+    rect = img.get_rect()
+    screen.blit(img, (x - rect.width // 2,
+                      y - rect.height // 2))
+
 
 init_map = load_init_map()
 
 hero = {
     'x': 0,
-    'y': 0
+    'y': 0,
+    'step': 0
 }
-
-hero_moves = []
-
-# Solve the path
-solver = A_star(init_map)
-solution = solver.solve()
 
 # %% Prepare pygame
 # Pygame Configuration
@@ -27,18 +33,32 @@ pygame.init()
 fps = 10
 fpsClock = pygame.time.Clock()
 width, height = 850, 650
-cell_size = (width / len(init_map[0]),
-             height / len(init_map))
+cell_size = (width // len(init_map[0]),
+             height // len(init_map))
 screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
 
-font = pygame.font.SysFont('Arial', 20)
+font = pygame.font.SysFont('Arial', 40, bold=True)
+font2 = pygame.font.SysFont('Arial', 20, bold=True)
 
 # %% Game loop
 running = True
 step = False
 continuous = False
 actual_map = init_map.copy()
-actual_map[hero["y"]][hero['x']] = 2
+# actual_map[hero["y"]][hero['x']] = 2
+
+# Solve the path
+screen.fill((255, 255, 255))
+draw_text(screen, font, (0, 0, 255), 'Solving Path',
+          width // 2, height // 2 - 20)
+draw_text(screen, font2, (255, 128, 0), 'Space - Single Step',
+          width // 2, height // 2 + 30)
+draw_text(screen, font2, (255, 128, 0), 'A - hold for continous move',
+          width // 2, height // 2 + 60)
+pygame.display.flip()
+solver = A_star(init_map)
+hero_moves = solver.solve()
+print('Path ready!!!')
 
 while running:
     for event in pygame.event.get():
@@ -56,38 +76,35 @@ while running:
     # Fill the background with white
     screen.fill((255, 255, 255))
     # draw the map
-    draw_map(screen, actual_map, cell_size)
+    draw_map(screen, actual_map, cell_size, (hero['x'], hero['y']))
 
     # Flip the display (render)
     pygame.display.flip()
 
     # generate next automata
-    if step | continuous:
-        # clear hero position
-        actual_map[hero["y"]][hero['x']] = 0
-        actual_map = next_step_map(actual_map.copy())
-        if ((hero['x'] < len(actual_map[0])) &
-           (actual_map[hero["y"]][hero['x'] + 1] != 1)):
-            hero['x'] += 1
-            hero_moves.append('R')
-        elif ((hero['y'] < len(actual_map)) &
-              (actual_map[hero["y"] + 1][hero['x']] != 1)):
-            hero['y'] += 1
-            hero_moves.append('D')
-        elif ((hero['x'] > 0) &
-              (actual_map[hero["y"]][hero['x'] - 1] != 1)):
-            hero['x'] -= 1
-            hero_moves.append('L')
-        elif ((hero['y'] > 0) &
-              (actual_map[hero["y"] - 1][hero['x']] != 1)):
-            hero['y'] -= 1
-            hero_moves.append('U')
-        else:
-            hero_moves.append('X')
-        actual_map[hero["y"]][hero['x']] = 2
+    if (step or continuous):
+        if hero['step'] < len(hero_moves):
+            # clear hero position
+            # actual_map[hero["y"]][hero['x']] = 0
+            # generate next_map
+            actual_map = next_step_map(actual_map.copy())
+            # get hero new position
+            if hero_moves[hero['step']] == 'U':
+                hero['y'] -= 1
+            if hero_moves[hero['step']] == 'D':
+                hero['y'] += 1
+            if hero_moves[hero['step']] == 'L':
+                hero['x'] -= 1
+            if hero_moves[hero['step']] == 'R':
+                hero['x'] += 1
+            hero['step'] += 1
+            # actual_map[hero["y"]][hero['x']] = 2
         step = False
 
     # generate framerate
     fpsClock.tick(fps)
-print((' ').join(hero_moves))
+solution = (' ').join(hero_moves)
+print(solution)
+with open(f'solution_{datetime.now().strftime(r"%Y%m%d_%H%M")}', 'w') as file:
+    file.write(solution)
 pygame.quit()

@@ -20,7 +20,8 @@ def load_init_map():
 
 
 def draw_map(screen: pygame.Surface, map: list,
-             cell_size: tuple[int, int]) -> None:
+             cell_size: tuple[int, int],
+             hero_pos: tuple[int, int]) -> None:
     """
     draw the map in a pygame surface
 
@@ -28,6 +29,7 @@ def draw_map(screen: pygame.Surface, map: list,
         screen (pygame.Surface): surface to draw
         map (list[][] of int): 2d matriz with map to draw
         cell_size (tuple[int, int]): size of each cell (width, height)
+        hero_pos (tuple[int, int]): (x, y) position to draw hero
     """
     for i_y, row in enumerate(map):
         for i_x, cell in enumerate(row):
@@ -37,6 +39,11 @@ def draw_map(screen: pygame.Surface, map: list,
             pygame.draw.rect(screen, cell_color[cell],
                              (i_x * cell_size[0] + 1, i_y * cell_size[1] + 1,
                               cell_size[0] - 2, cell_size[1] - 2))
+            if i_x == hero_pos[0] and i_y == hero_pos[1]:
+                pygame.draw.circle(screen, cell_color[2],
+                                   (i_x * cell_size[0] + cell_size[0] / 2,
+                                   i_y * cell_size[1] + cell_size[1] / 2),
+                                   cell_size[0] // 2 - 2)
 
 
 def next_step_map(old_map: list) -> list:
@@ -53,7 +60,6 @@ def next_step_map(old_map: list) -> list:
         list[][] of int: new map after iteration
     """
     # test
-    return old_map
     rows = len(old_map)
     columns = len(old_map[0])
     new_map = []

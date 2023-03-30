@@ -13,10 +13,19 @@ class Node:
         self.t = t
         self.heuristic = -1
         self.dist_start = -1
+        self.dist_target = -1
+        self.g_cost = 0
         self.parent = parent
+
+    def copy(self, other) -> None:
+        self.heuristic = other.heuristic
+        self.g_cost = other.g_cost
+        self.parent = other.parent
 
     def __gt__(self, other) -> bool:
         if isinstance(other, Node):
+            if self.heuristic == other.heuristic:
+                return self.dist_target > other.dist_target
             return self.heuristic > other.heuristic
 
     def __eq__(self, other) -> bool:
@@ -43,4 +52,5 @@ class Graph:
             path.append(end_node)
             end_node = end_node.parent
         path.append(end_node)
-        return path.reverse()
+        path.reverse()
+        return path
