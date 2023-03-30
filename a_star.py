@@ -1,4 +1,6 @@
 import math
+import time
+from datetime import timedelta
 from automata import find_postion, next_step_map
 from graph import Graph, Node
 
@@ -44,14 +46,16 @@ class A_star:
         return dist
 
     def calculate_distances(self, node: Node):
-        dist_start = math.sqrt((node.x - self.start['x'])**2 +
-                               (node.y - self.start['y'])**2 +
-                               (node.t/1000))
+        # dist_start = math.sqrt((node.x - self.start['x'])**2 +
+        #                        (node.y - self.start['y'])**2 +
+        #                        (node.t/1000))
         dist_target = math.sqrt((node.x - self.target['x'])**2 +
                                 (node.y - self.target['y'])**2)
-        node.dist_start = dist_start
+        # node.dist_start = dist_start
         node.dist_target = dist_target
-        node.heuristic = node.g_cost + dist_target
+        # by reducing g_cost, let's explore more near node to target
+        # could find the solution faster, but could not be the shortest
+        node.heuristic = (node.g_cost / 3) + dist_target
 
     def calculate_movements(self, path: list[Node]) -> list[chr]:
         moves = []
@@ -79,6 +83,7 @@ class A_star:
         Returns:
             list[chr]: list with the movevements to solve
         """
+        _start = time.monotonic()
         nodes_visited = 0
         # put root node as starting node
         open_nodes = [self.graph.nodes[0]]
@@ -88,7 +93,8 @@ class A_star:
         while True:
             if len(open_nodes) == 0:
                 print('No solution found')
-                return []
+                sol = []
+                break
 
             nodes_visited += 1
 
@@ -97,11 +103,10 @@ class A_star:
             close_nodes.append(actual_node)
 
             if nodes_visited % 1000 == 0:
-                print(f'nodes visited: {nodes_visited}')
-                print(f'maps generated: {len(self.maps)}')
-                print(f'graph_size: {len(self.graph.nodes)}')
                 print(f'open nodes: {len(open_nodes)}')
-                print(f'close nodes: {len(close_nodes)}')
+                print(f'closed nodes: {nodes_visited}')
+                print(f'maps generated: {len(self.maps)}')
+                # print(f'graph_size: {len(self.graph.nodes)}')
                 print(f'Actual node: x:{actual_node.x} | ' +
                       f'y: {actual_node.y} | ' +
                       f't: {actual_node.t} | ' +
@@ -112,27 +117,19 @@ class A_star:
                actual_node.y == self.target['y']):
                 # found solution
                 path = self.graph.get_path(actual_node)
-                return self.calculate_movements(path)
+                sol = self.calculate_movements(path)
+                break
 
             # open next steps of this node
             next_nodes = self.create_children(actual_node)
             for next_node in next_nodes:
-                if next_node in close_nodes:
+                if next_node in close_nodes or next_node in open_nodes:
                     continue
-                old_node = self.graph.find_node(next_node)
-                new_dist_cost = (actual_node.g_cost +
-                                 self.get_distance(actual_node,
-                                                   next_node)
-                                 )
-                if (old_node is None or
-                    new_dist_cost < old_node.g_cost or
-                   next_node not in open_nodes):
-                    next_node.g_cost = new_dist_cost
-                    self.calculate_distances(next_node)
-                    if old_node is None:
-                        # not in the closed an not in graph is not opened
-                        open_nodes.append(next_node)
-                        self.graph.add_node(next_node)
-                    else:
-                        # update previous node with smaller g_cost
-                        old_node.copy(next_node)
+
+                next_node.g_cost = actual_node.g_cost + 1
+                self.calculate_distances(next_node)
+                open_nodes.append(next_node)
+                self.graph.add_node(next_node)
+        _end = time.monotonic()
+        print('Time to solve: ' + str(timedelta(seconds=_end - _start)))
+        return sol

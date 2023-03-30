@@ -24,7 +24,7 @@ init_map = load_init_map()
 hero = {
     'x': 0,
     'y': 0,
-    'step': 0
+    'step': -1
 }
 
 # %% Prepare pygame
@@ -51,14 +51,16 @@ actual_map = init_map.copy()
 screen.fill((255, 255, 255))
 draw_text(screen, font, (0, 0, 255), 'Solving Path',
           width // 2, height // 2 - 20)
+pygame.display.flip()
+solver = A_star(init_map)
+hero_moves = solver.solve()
+print('Path ready!!!')
+print(f'Solution length:  {len(hero_moves)}')
 draw_text(screen, font2, (255, 128, 0), 'Space - Single Step',
           width // 2, height // 2 + 30)
 draw_text(screen, font2, (255, 128, 0), 'A - hold for continous move',
           width // 2, height // 2 + 60)
 pygame.display.flip()
-solver = A_star(init_map)
-hero_moves = solver.solve()
-print('Path ready!!!')
 
 while running:
     for event in pygame.event.get():
@@ -73,17 +75,11 @@ while running:
             if event.key == pygame.K_a:
                 continuous = False
 
-    # Fill the background with white
-    screen.fill((255, 255, 255))
-    # draw the map
-    draw_map(screen, actual_map, cell_size, (hero['x'], hero['y']))
-
-    # Flip the display (render)
-    pygame.display.flip()
-
     # generate next automata
     if (step or continuous):
-        if hero['step'] < len(hero_moves):
+        if hero['step'] == -1:
+            hero['step'] += 1
+        elif hero['step'] < len(hero_moves):
             # clear hero position
             # actual_map[hero["y"]][hero['x']] = 0
             # generate next_map
@@ -99,12 +95,21 @@ while running:
                 hero['x'] += 1
             hero['step'] += 1
             # actual_map[hero["y"]][hero['x']] = 2
+            # Fill the background with white
+        screen.fill((255, 255, 255))
+        # draw the map
+        draw_map(screen, actual_map, cell_size, (hero['x'], hero['y']))
+
+        # Flip the display (render)
+        pygame.display.flip()
         step = False
 
     # generate framerate
     fpsClock.tick(fps)
+
 solution = (' ').join(hero_moves)
 print(solution)
-with open(f'solution_{datetime.now().strftime(r"%Y%m%d_%H%M")}', 'w') as file:
+with open(f'solution_{datetime.now().strftime(r"%Y%m%d_%H%M")}.txt',
+          'w') as file:
     file.write(solution)
 pygame.quit()
