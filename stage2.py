@@ -6,7 +6,7 @@ Uses pygame to visualize results
 # %% Import libraries
 import pygame
 from datetime import datetime
-from automata import load_init_map, next_step_map, draw_map
+from automata import load_init_map, next_step_map_new, draw_map
 from a_star import A_star
 
 
@@ -52,7 +52,7 @@ screen.fill((255, 255, 255))
 draw_text(screen, font, (0, 0, 255), 'Solving Path',
           width // 2, height // 2 - 20)
 pygame.display.flip()
-solver = A_star(init_map)
+solver = A_star(init_map, 3.0)
 hero_moves = solver.solve()
 print('Path ready!!!')
 print(f'Solution length:  {len(hero_moves)}')
@@ -83,7 +83,7 @@ while running:
             # clear hero position
             # actual_map[hero["y"]][hero['x']] = 0
             # generate next_map
-            actual_map = next_step_map(actual_map.copy())
+            actual_map = next_step_map_new(actual_map)  # .copy())
             # get hero new position
             if hero_moves[hero['step']] == 'U':
                 hero['y'] -= 1

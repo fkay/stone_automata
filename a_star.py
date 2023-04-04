@@ -1,28 +1,29 @@
 import math
 import time
 from datetime import timedelta
-from automata import find_postion, next_step_map
+from automata import find_postion, next_step_map_new
 from graph import Graph, Node
 
 
 class A_star:
-    def __init__(self, init_map: list[list[int]]):
+    def __init__(self, init_map: list[list[int]],
+                 heuristics: float = 3.0):
         self.maps = [init_map]  # maps for every time frame
         self.start = find_postion(init_map, 3)
         self.target = find_postion(init_map, 4)
         self.graph = Graph()
         start_node = Node(self.start['x'], self.start['y'], 0)
+        self.heuristics = heuristics
         self.calculate_distances(start_node)
         self.graph.add_node(start_node)
         self.rows = len(init_map)
         self.cols = len(init_map[0])
-        # self.create_children(self.node[0])
 
     def create_children(self, node: Node) -> list[Node]:
         children = []
         next_t = node.t + 1
         if len(self.maps) < (next_t + 1):
-            self.maps.append(next_step_map(
+            self.maps.append(next_step_map_new(
                 self.maps[-1]
             ))
         for y, x in [(-1, 0), (1, 0),
@@ -49,13 +50,17 @@ class A_star:
         # dist_start = math.sqrt((node.x - self.start['x'])**2 +
         #                        (node.y - self.start['y'])**2 +
         #                        (node.t/1000))
-        dist_target = math.sqrt((node.x - self.target['x'])**2 +
-                                (node.y - self.target['y'])**2)
+        # euclidean distance
+        # dist_target = math.sqrt((node.x - self.target['x'])**2 +
+        #                         (node.y - self.target['y'])**2)
+        # manhattan distance
+        dist_target = (abs(node.x - self.target['x']) +
+                       abs(node.y - self.target['y']))
         # node.dist_start = dist_start
         node.dist_target = dist_target
         # by reducing g_cost, let's explore more near node to target
         # could find the solution faster, but could not be the shortest
-        node.heuristic = (node.g_cost / 3) + dist_target
+        node.heuristic = (node.g_cost / self.heuristics) + dist_target
 
     def calculate_movements(self, path: list[Node]) -> list[chr]:
         moves = []
