@@ -1,13 +1,14 @@
 import math
 import time
 from datetime import timedelta
-from automata import find_postion, next_step_map_new
+from automata import find_postion, next_step_map_convolve
 from graph import Graph, Node
 
 
 class A_star:
     def __init__(self, init_map: list[list[int]],
-                 heuristics: float = 3.0):
+                 heuristics: float = 3.0,
+                 init_lifes: int = 1):
         self.maps = [init_map]  # maps for every time frame
         self.start = find_postion(init_map, 3)
         self.target = find_postion(init_map, 4)
@@ -18,27 +19,25 @@ class A_star:
         self.graph.add_node(start_node)
         self.rows = len(init_map)
         self.cols = len(init_map[0])
+        self.lifes = init_lifes
 
     def create_children(self, node: Node) -> list[Node]:
         children = []
         next_t = node.t + 1
         if len(self.maps) < (next_t + 1):
-            self.maps.append(next_step_map_new(
+            self.maps.append(next_step_map_convolve(
                 self.maps[-1]
             ))
         for y, x in [(-1, 0), (1, 0),
                      (0, -1), (0, 1)]:
             if (node.y + y >= 0 and
-                node.y + y < self.rows and
-                node.x + x >= 0 and
-                node.x + x < self.cols and
-                (self.maps[next_t][node.y + y][node.x + x] == 0 or
-                 self.maps[next_t][node.y + y][node.x + x] == 4)):
-                new_node = Node(node.x + x, node.y + y, next_t, node)
-                # if self.graph.find_node(new_node) is None:
-                #     self.calculate_distances(new_node)
-                #     self.graph.add_node(new_node)
-                children.append(new_node)
+               node.y + y < self.rows and
+               node.x + x >= 0 and
+               node.x + x < self.cols):
+                if (self.maps[next_t][node.y + y][node.x + x] != 1 or
+                   self.lifes > 0):
+                    new_node = Node(node.x + x, node.y + y, next_t, node)
+                    children.append(new_node)
         return children
 
     def get_distance(self, node_from: Node, node_to: Node):

@@ -7,7 +7,7 @@ uses Euclidean distance for the heuristics
 
 class Node:
     def __init__(self, x: int, y: int, t: int,
-                 parent=None):
+                 parent=None, value: int = 0):
         self.x = x
         self.y = y
         self.t = t
@@ -16,6 +16,7 @@ class Node:
         self.dist_target = -1
         self.g_cost = 0
         self.parent = parent
+        self.remain_lifes = 0
 
     def copy(self, other) -> None:
         self.heuristic = other.heuristic
