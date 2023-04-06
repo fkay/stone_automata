@@ -1,25 +1,50 @@
 import math
 import time
 from datetime import timedelta
-from automata import find_postion, next_step_map_convolve
+from automata import find_postion, next_step_map_convolve, load_init_map
 from graph import Graph, Node
 
 
 class A_star:
     def __init__(self, init_map: list[list[int]],
-                 heuristics: float = 3.0,
+                 heuristics_type: str = 'manhattan',
+                 heuristics_const: float = 3.0,
                  init_lifes: int = 1):
         self.maps = [init_map]  # maps for every time frame
-        self.start = find_postion(init_map, 3)
-        self.target = find_postion(init_map, 4)
+        # self.start = find_postion(init_map, 3)
+        # self.target = find_postion(init_map, 4)
+        self.start = {'x': 0, 'y': 0}
+        self.target = {'x': init_map.shape[1] - 1, 'y': init_map.shape[0] - 1}
         self.graph = Graph()
-        start_node = Node(self.start['x'], self.start['y'], 0)
-        self.heuristics = heuristics
-        self.calculate_distances(start_node)
+        start_node = Node(self.start['x'], self.start['y'], 0,
+                          parent=None, remain_lifes=init_lifes)
+        self.heuristics_const = heuristics_const
+        if heuristics_type == 'manhattan':
+            self.heuristics = self.calc_manhattan
+        else:
+            self.heuristics = self.calc_euclidean
+        if heuristics_const == 0:
+            self.heuristics = self.calc_zero_heuristic
+        start_node.g_cost = 0
+        self.heuristics(start_node)
+        start_node.f_cost = 0
         self.graph.add_node(start_node)
         self.rows = len(init_map)
         self.cols = len(init_map[0])
         self.lifes = init_lifes
+
+    def calc_zero_heuristic(self, node: Node) -> None:
+        node.h_cost = 0
+
+    def calc_manhattan(self, node: Node) -> None:
+        node.h_cost = (abs(node.x - self.target['x']) +
+                       abs(node.y - self.target['y'])) * self.heuristics_const
+
+    def calc_euclidean(self, node: Node) -> None:
+        node.h_cost = math.sqrt(
+            (node.x - self.target['x'])**2 +
+            (node.y - self.target['y'])**2
+            ) * self.heuristics_const
 
     def create_children(self, node: Node) -> list[Node]:
         children = []
@@ -34,32 +59,20 @@ class A_star:
                node.y + y < self.rows and
                node.x + x >= 0 and
                node.x + x < self.cols):
-                if (self.maps[next_t][node.y + y][node.x + x] != 1 or
-                   self.lifes > 0):
-                    new_node = Node(node.x + x, node.y + y, next_t, node)
+                next_value = self.maps[next_t][node.y + y][node.x + x]
+                if (next_value != 1 or
+                   node.remain_lifes > 1):
+                    new_node = Node(node.x + x, node.y + y, next_t, node,
+                                    node.remain_lifes - next_value)
                     children.append(new_node)
         return children
 
-    def get_distance(self, node_from: Node, node_to: Node):
-        dist = (abs(node_from.x - node_to.x) +
-                abs(node_from.y - node_to.y))
-        return dist
-
-    def calculate_distances(self, node: Node):
-        # dist_start = math.sqrt((node.x - self.start['x'])**2 +
-        #                        (node.y - self.start['y'])**2 +
-        #                        (node.t/1000))
-        # euclidean distance
-        # dist_target = math.sqrt((node.x - self.target['x'])**2 +
-        #                         (node.y - self.target['y'])**2)
-        # manhattan distance
-        dist_target = (abs(node.x - self.target['x']) +
-                       abs(node.y - self.target['y']))
-        # node.dist_start = dist_start
-        node.dist_target = dist_target
-        # by reducing g_cost, let's explore more near node to target
-        # could find the solution faster, but could not be the shortest
-        node.heuristic = (node.g_cost / self.heuristics) + dist_target
+    def calculate_costs(self, node: Node):
+        node.g_cost = node.parent.g_cost + 1  # + (self.lifes - node.remain_lifes)  # noqa
+        # calc h_cost
+        self.heuristics(node)
+        # f_cost
+        node.f_cost = node.g_cost + node.h_cost
 
     def calculate_movements(self, path: list[Node]) -> list[chr]:
         moves = []
@@ -115,7 +128,8 @@ class A_star:
                       f'y: {actual_node.y} | ' +
                       f't: {actual_node.t} | ' +
                       f'g_cost: {actual_node.g_cost} | ' +
-                      f'heuristic: {actual_node.heuristic}')
+                      f'h_cost: {actual_node.h_cost} | ' +
+                      f'f_cost: {actual_node.f_cost}')
 
             if (actual_node.x == self.target['x'] and
                actual_node.y == self.target['y']):
@@ -130,10 +144,24 @@ class A_star:
                 if next_node in close_nodes or next_node in open_nodes:
                     continue
 
-                next_node.g_cost = actual_node.g_cost + 1
-                self.calculate_distances(next_node)
+                self.calculate_costs(next_node)
                 open_nodes.append(next_node)
                 self.graph.add_node(next_node)
         _end = time.monotonic()
         print('Time to solve: ' + str(timedelta(seconds=_end - _start)))
         return sol
+
+
+if __name__ == '__main__':
+    # %% load the initial map
+    init_map = load_init_map()
+    init_map = init_map[10:40, 20:50]
+    init_map[0, 0] = 0  # 3
+    init_map[-1, -1] = 0  # 4
+
+    solution = A_star(init_map, heuristics_type='manhattan',
+                      heuristics_const=0,
+                      init_lifes=5).solve()
+    print(f'Solution length: {len(solution)}')
+    solution = ' '.join(solution)
+    print(solution)

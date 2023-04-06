@@ -17,8 +17,11 @@ cell_color = [
         (255, 0, 0),  # 2 - curr pos - red
         (255, 255, 0),  # 3 - start - yellow
         (255, 255, 0),  # 4 - end - yellow
-        (255, 0, 255)  # 5 - paths opened
+        (196, 196, 255)  # 5 - paths opened
     ]
+
+init_lifes = 6
+life_color = 100 / init_lifes
 
 
 def draw_text(screen: pygame.Surface, font: pygame.font.Font,
@@ -33,7 +36,8 @@ def draw_text(screen: pygame.Surface, font: pygame.font.Font,
 def draw_map(screen: pygame.Surface, map: np.array,
              path: np.array,
              cell_size: tuple[int, int],
-             hero_pos: tuple[int, int]) -> None:
+             hero_pos: tuple[int, int],
+             font) -> None:
     """
     draw the map in a pygame surface
 
@@ -55,21 +59,35 @@ def draw_map(screen: pygame.Surface, map: np.array,
                              (i_x * cell_size[0] + 1, i_y * cell_size[1] + 1,
                               cell_size[0] - 2, cell_size[1] - 2))
             if cell_path > 0:
-                pygame.draw.rect(screen, cell_color[5],
+                pygame.draw.rect(screen,
+                                 (196 - (cell_path - 1) * life_color,
+                                  196 - (init_lifes - cell_path) * life_color,
+                                  255),
                                  (i_x * cell_size[0] + 3,
                                   i_y * cell_size[1] + 3,
-                                 cell_size[0] - 6, cell_size[1] - 6))
-            if i_x == hero_pos[0] and i_y == hero_pos[1]:
-                pygame.draw.circle(screen, cell_color[2],
-                                   (i_x * cell_size[0] + cell_size[0] / 2,
-                                   i_y * cell_size[1] + cell_size[1] / 2),
-                                   cell_size[0] // 2 - 2)
+                                  cell_size[0] - 6, cell_size[1] - 6))
+                draw_text(screen, font, (0, 0, 0),
+                          str(cell_path),
+                          i_x * cell_size[0] + cell_size[0] / 2,
+                          i_y * cell_size[1] + cell_size[1] / 2)
+    pygame.draw.rect(screen, cell_color[3],
+                     (0 * cell_size[0] + 1, 0 * cell_size[1] + 1,
+                     cell_size[0] - 2, cell_size[1] - 2))
+    pygame.draw.rect(screen, cell_color[4],
+                     ((cols - 1) * cell_size[0] + 1,
+                     (rows - 1) * cell_size[1] + 1,
+                     cell_size[0] - 2, cell_size[1] - 2))
+    pygame.draw.circle(screen, cell_color[2],
+                       (hero_pos[0] * cell_size[0] + cell_size[0] / 2,
+                       hero_pos[1] * cell_size[1] + cell_size[1] / 2),
+                       cell_size[0] / 3 - 2,
+                       1)
 
 
 init_map = load_init_map()
-# init_map = init_map[10:30, 20:40]
-# init_map[0, 0] = 3
-# init_map[-1, -1] = 4
+init_map = init_map[10:40, 20:50]
+init_map[0, 0] = 0  # 3
+init_map[-1, -1] = 0  # 4
 
 hero = {
     'x': 0,
@@ -89,11 +107,9 @@ screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
 
 font = pygame.font.SysFont('Arial', 40, bold=True)
 font2 = pygame.font.SysFont('Arial', 20, bold=True)
+font3 = pygame.font.SysFont('Arial', 10, bold=True)
 
 # %% Game loop
-running = True
-step = False
-continuous = False
 actual_map = init_map.copy()
 # actual_map[hero["y"]][hero['x']] = 2
 
@@ -102,7 +118,7 @@ screen.fill((255, 255, 255))
 draw_text(screen, font, (0, 0, 255), 'Solving Path',
           width // 2, height // 2 - 20)
 pygame.display.flip()
-solver = solution_test(init_map)
+solver = solution_test(init_map, init_lifes)
 hero_moves = solver['moves']
 print('Path ready!!!')
 print(f'Solution length:  {len(hero_moves)}')
@@ -111,6 +127,11 @@ draw_text(screen, font2, (255, 128, 0), 'Space - Single Step',
 draw_text(screen, font2, (255, 128, 0), 'A - hold for continous move',
           width // 2, height // 2 + 60)
 pygame.display.flip()
+
+running = True
+step = False
+continuous = False
+reverse_step = False
 
 while running:
     for event in pygame.event.get():
@@ -121,6 +142,8 @@ while running:
                 step = True
             if event.key == pygame.K_a:
                 continuous = True
+            if event.key == pygame.K_z:
+                reverse_step = True
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_a:
                 continuous = False
@@ -150,11 +173,39 @@ while running:
         # draw the map
         draw_map(screen, actual_map,
                  solver['paths'][hero['step']],
-                 cell_size, (hero['x'], hero['y']))
+                 cell_size, (hero['x'], hero['y']),
+                 font3)
 
         # Flip the display (render)
         pygame.display.flip()
         step = False
+
+    if (reverse_step):
+        if hero['step'] > 1:
+            # generate previous_map
+            hero['step'] -= 1
+            actual_map = solver['maps'][hero['step']]
+            # get hero new position
+            if hero_moves[hero['step']] == 'U':
+                hero['y'] += 1
+            if hero_moves[hero['step']] == 'D':
+                hero['y'] -= 1
+            if hero_moves[hero['step']] == 'L':
+                hero['x'] += 1
+            if hero_moves[hero['step']] == 'R':
+                hero['x'] -= 1
+            # actual_map[hero["y"]][hero['x']] = 2
+            # Fill the background with white
+        # screen.fill((255, 255, 255))
+        # draw the map
+        draw_map(screen, actual_map,
+                 solver['paths'][hero['step']],
+                 cell_size, (hero['x'], hero['y']),
+                 font3)
+
+        # Flip the display (render)
+        pygame.display.flip()
+        reverse_step = False
 
     # generate framerate
     fpsClock.tick(fps)

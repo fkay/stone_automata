@@ -12,7 +12,10 @@ def load_init_map(
     init_map = []
     for r in rows:
         init_map.append([int(v) for v in r.split()])
-    return np.array(init_map)
+    # make start and end position always zeros
+    init_map[0][0] = 0
+    init_map[-1][-1] = 0
+    return np.array(init_map, np.int8)
 
 
 def next_step_map(old_map: list) -> list:
@@ -93,7 +96,7 @@ def next_step_map_new(old_map: np.array) -> np.array:
     new_map = np.zeros(old_map.shape)
     # assure start and end always white (verified on maps that always on top
     # left cell and bottom right cell)
-    old_map[0, 0] = 0
+    # old_map[0, 0] = 0
     old_map[rows - 1, cols - 1] = 0
 
     # calculate center of map
@@ -183,8 +186,8 @@ def next_step_map_convolve(old_map: np.array) -> np.array:
     # new_map = np.zeros(old_map.shape)
     # assure start and end always white (verified on maps that always on top
     # left cell and bottom right cell)
-    old_map[0, 0] = 0
-    old_map[rows - 1, cols - 1] = 0
+    # old_map[0, 0] = 0
+    # old_map[rows - 1, cols - 1] = 0
 
     k = np.array([[1, 1, 1],
                   [1, -1.6, 1],
@@ -194,10 +197,12 @@ def next_step_map_convolve(old_map: np.array) -> np.array:
     new_map = ((conv > 1.9) & (conv < 4.1)).astype(np.int8)
 
     # assure start and end colors
-    old_map[0][0] = 3
-    old_map[rows - 1][cols - 1] = 4
-    new_map[0][0] = 3
-    new_map[rows - 1][cols - 1] = 4
+    # old_map[0][0] = 3
+    # old_map[rows - 1][cols - 1] = 4
+    # new_map[0][0] = 3
+    # new_map[rows - 1][cols - 1] = 4
+    new_map[0][0] = 0
+    new_map[rows - 1][cols - 1] = 0
     return new_map
 
 

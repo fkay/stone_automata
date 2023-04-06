@@ -39,25 +39,34 @@ def draw_map(screen: pygame.Surface, map: list,
         cell_size (tuple[int, int]): size of each cell (width, height)
         hero_pos (tuple[int, int]): (x, y) position to draw hero
     """
-    for i_y, row in enumerate(map):
-        for i_x, cell in enumerate(row):
+    rows, cols = map.shape
+    for i_y in range(rows):
+        for i_x in range(cols):
+            cell = map[i_y, i_x]
             pygame.draw.rect(screen, (0, 0, 0),
                              (i_x * cell_size[0], i_y * cell_size[1],
                               cell_size[0], cell_size[1]))
             pygame.draw.rect(screen, cell_color[cell],
                              (i_x * cell_size[0] + 1, i_y * cell_size[1] + 1,
                               cell_size[0] - 2, cell_size[1] - 2))
-            if i_x == hero_pos[0] and i_y == hero_pos[1]:
-                pygame.draw.circle(screen, cell_color[2],
-                                   (i_x * cell_size[0] + cell_size[0] / 2,
-                                   i_y * cell_size[1] + cell_size[1] / 2),
-                                   cell_size[0] // 2 - 2)
+    pygame.draw.rect(screen, cell_color[3],
+                     (0 * cell_size[0] + 1, 0 * cell_size[1] + 1,
+                     cell_size[0] - 2, cell_size[1] - 2))
+    pygame.draw.rect(screen, cell_color[4],
+                     ((cols - 1) * cell_size[0] + 1,
+                     (rows - 1) * cell_size[1] + 1,
+                     cell_size[0] - 2, cell_size[1] - 2))
+    pygame.draw.circle(screen, cell_color[2],
+                       (hero_pos[0] * cell_size[0] + cell_size[0] / 2,
+                       hero_pos[1] * cell_size[1] + cell_size[1] / 2),
+                       cell_size[0] / 3 - 2,
+                       1)
 
 
 init_map = load_init_map()
-init_map = init_map[10:30, 20:40]
-init_map[0, 0] = 3
-init_map[-1, -1] = 4
+init_map = init_map[10:40, 20:50]
+init_map[0, 0] = 0  # 3
+init_map[-1, -1] = 0  # 4
 
 hero = {
     'x': 0,
@@ -90,7 +99,9 @@ screen.fill((255, 255, 255))
 draw_text(screen, font, (0, 0, 255), 'Solving Path',
           width // 2, height // 2 - 20)
 pygame.display.flip()
-solver = A_star(init_map, 3.0)
+solver = A_star(init_map, heuristics_type='manhattan',
+                heuristics_const=0,
+                init_lifes=6)
 hero_moves = solver.solve()
 print('Path ready!!!')
 print(f'Solution length:  {len(hero_moves)}')
