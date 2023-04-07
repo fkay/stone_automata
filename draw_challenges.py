@@ -88,7 +88,7 @@ def draw_pixel_map(screen: pygame.Surface, map: np.array,
 
 solution_file_path = r'output1_20230405_1044.txt'
 # solution_file_path = r'solution_20230330_1931.txt'
-init_map = load_init_map('inputs/input1.txt')
+init_map = load_init_map('inputs/test_patterns.txt')
 # init_map = init_map[10:30, 20:40]
 # init_map[0, 0] = 3
 # init_map[-1, -1] = 4
@@ -105,7 +105,8 @@ pygame.init()
 fps = 20
 fpsClock = pygame.time.Clock()
 (height, width) = (800, 800)  # init_map.shape
-cell_size = (8, 8)
+# cell_size = (8, 8)
+cell_size = (40, 40)
 cell_cols = width // cell_size[0]
 cell_rows = height // cell_size[1]
 if height > 900:
@@ -152,6 +153,20 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        if event.type == pygame.MOUSEBUTTONUP:
+            pos = pygame.mouse.get_pos()
+            mous_x = pos[0] // cell_size[0]
+            mous_y = pos[1] // cell_size[1]
+            print(mous_x, mous_y)
+            if actual_map[mous_y, mous_x] == 1:
+                actual_map[mous_y, mous_x] = 0
+            else:
+                actual_map[mous_y, mous_x] = 1
+            draw_map(screen, actual_map,
+                     cell_rows, cell_cols, cell_size,
+                     (hero['x'], hero['y']),
+                     offset_x, offset_y)
+            pygame.display.flip()
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 step = True
@@ -174,8 +189,8 @@ while running:
                 pygame.display.flip()
             if event.key == pygame.K_DOWN:
                 offset_y += offset_step
-                if offset_y > init_map.shape[0] - height:
-                    offset_y = init_map.shape[0] - height
+                if offset_y > init_map.shape[0] - cell_rows:
+                    offset_y = init_map.shape[0] - cell_rows
                 # draw_pixel_map(screen, actual_map, (hero['x'], hero['y']),
                 #                offset_x, offset_y)
                 draw_map(screen, actual_map,
@@ -196,8 +211,8 @@ while running:
                 pygame.display.flip()
             if event.key == pygame.K_RIGHT:
                 offset_x += offset_step
-                if offset_x > init_map.shape[1] - width:
-                    offset_x = init_map.shape[1] - width
+                if offset_x > init_map.shape[1] - cell_cols:
+                    offset_x = init_map.shape[1] - cell_cols
                 # draw_pixel_map(screen, actual_map, (hero['x'], hero['y']),
                 #                offset_x, offset_y)
                 draw_map(screen, actual_map,

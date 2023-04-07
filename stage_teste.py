@@ -7,7 +7,7 @@ Uses pygame to visualize results
 import pygame
 import numpy as np
 from datetime import datetime
-from automata import load_init_map
+from automata import load_init_map, next_step_map_convolve
 from test import solution_test
 from a_star import A_star
 
@@ -20,8 +20,24 @@ cell_color = [
         (196, 196, 255)  # 5 - paths opened
     ]
 
-init_lifes = 6
+init_lifes = 1
+special = 5
+start_pos_x = 0
+start_pos_y = 0
 life_color = 100 / init_lifes
+stop_before = 0
+
+init_map = load_init_map()
+init_map = init_map[10:40, 20:50]
+init_map[0, 0] = 0  # 3
+init_map[-1, -1] = 0  # 4
+
+hero = {
+    'x': start_pos_x,
+    'y': start_pos_y,
+    'step': -1,
+    'map': 0
+}
 
 
 def draw_text(screen: pygame.Surface, font: pygame.font.Font,
@@ -84,17 +100,6 @@ def draw_map(screen: pygame.Surface, map: np.array,
                        1)
 
 
-init_map = load_init_map()
-init_map = init_map[10:40, 20:50]
-init_map[0, 0] = 0  # 3
-init_map[-1, -1] = 0  # 4
-
-hero = {
-    'x': 0,
-    'y': 0,
-    'step': -1
-}
-
 # %% Prepare pygame
 # Pygame Configuration
 pygame.init()
@@ -111,6 +116,7 @@ font3 = pygame.font.SysFont('Arial', 10, bold=True)
 
 # %% Game loop
 actual_map = init_map.copy()
+maps = [init_map]
 # actual_map[hero["y"]][hero['x']] = 2
 
 # Solve the path
@@ -118,10 +124,13 @@ screen.fill((255, 255, 255))
 draw_text(screen, font, (0, 0, 255), 'Solving Path',
           width // 2, height // 2 - 20)
 pygame.display.flip()
-solver = solution_test(init_map, init_lifes)
+solver = solution_test(init_map, init_lifes, start_pos_x, start_pos_y,
+                       stop_before, special)
 hero_moves = solver['moves']
 print('Path ready!!!')
 print(f'Solution length:  {len(hero_moves)}')
+solution = (' ').join(hero_moves)
+print(solution)
 draw_text(screen, font2, (255, 128, 0), 'Space - Single Step',
           width // 2, height // 2 + 30)
 draw_text(screen, font2, (255, 128, 0), 'A - hold for continous move',
@@ -150,13 +159,14 @@ while running:
 
     # generate next automata
     if (step or continuous):
+        repeat_map = False
         if hero['step'] == -1:
             hero['step'] += 1
         elif hero['step'] < len(hero_moves):
             # clear hero position
             # actual_map[hero["y"]][hero['x']] = 0
             # generate next_map
-            actual_map = solver['maps'][hero['step'] + 1]
+            actual_map = maps[hero['map']]
             # get hero new position
             if hero_moves[hero['step']] == 'U':
                 hero['y'] -= 1
@@ -166,25 +176,45 @@ while running:
                 hero['x'] -= 1
             if hero_moves[hero['step']] == 'R':
                 hero['x'] += 1
+            if hero_moves[hero['step']] == 'A':
+                repeat_map = True
+                hero['step'] += 1
+                change_y = int(hero_moves[hero['step']])
+                hero['step'] += 1
+                change_x = int(hero_moves[hero['step']])
+                actual_map[change_y, change_x] = 1 - actual_map[change_y,
+                                                                change_x]
+                print(f'changed: row: {change_y}, col: {change_x}')
+            # actual_map = solver['maps'][hero['step'] + 1]
             hero['step'] += 1
+            if not repeat_map:
+                if hero['map'] + 1 > len(maps) - 1:
+                    maps.append(next_step_map_convolve(maps[hero['map']]))
+                hero['map'] += 1
+            actual_map = maps[hero['map']]
             # actual_map[hero["y"]][hero['x']] = 2
             # Fill the background with white
         screen.fill((255, 255, 255))
         # draw the map
         draw_map(screen, actual_map,
-                 solver['paths'][hero['step']],
+                 solver['paths'][hero['map']],
                  cell_size, (hero['x'], hero['y']),
                  font3)
 
         # Flip the display (render)
         pygame.display.flip()
+        pygame.display.set_caption(
+            f'Solving: step: {hero["step"]}' +
+            f' | particle pos: ({hero["x"]}, {hero["y"]})')
         step = False
 
     if (reverse_step):
         if hero['step'] > 1:
             # generate previous_map
             hero['step'] -= 1
-            actual_map = solver['maps'][hero['step']]
+            hero['map'] -= 1
+            # actual_map = solver['maps'][hero['step']]
+            actual_map = maps[hero['step']]
             # get hero new position
             if hero_moves[hero['step']] == 'U':
                 hero['y'] += 1
@@ -194,6 +224,8 @@ while running:
                 hero['x'] += 1
             if hero_moves[hero['step']] == 'R':
                 hero['x'] -= 1
+            else:  # must be A command
+                hero['step'] -= 2  # back another 2 positions
             # actual_map[hero["y"]][hero['x']] = 2
             # Fill the background with white
         # screen.fill((255, 255, 255))
@@ -210,8 +242,6 @@ while running:
     # generate framerate
     fpsClock.tick(fps)
 
-solution = (' ').join(hero_moves)
-print(solution)
 write_file = False
 if write_file:
     with open(f'solution_{datetime.now().strftime(r"%Y%m%d_%H%M")}.txt',
