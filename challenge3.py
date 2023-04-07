@@ -18,12 +18,18 @@ model = A_star(init_map, heuristics_type='manhattan',
                init_lifes=1)
 # particle_moves = model.solve()
 # %% try solving with other method
-particle_moves = solution_test(init_map, 1)['moves']
+solution = solution_test(init_map,
+                         init_lifes=1,
+                         stop_distance=60,
+                         special=30)
+
+particle_moves = solution['moves']
 
 # %% write the solution
 print(f'Solution length:  {len(particle_moves)}')
-solution = (' ').join(particle_moves)
-print(solution)
+moves = (' ').join(particle_moves)
+print(moves)
 with open(f'output3_{datetime.now().strftime(r"%Y%m%d_%H%M")}.txt',
           'w') as file:
-    file.write(solution)
+    file.write(moves)
+print(f'Final pos: {solution["part_pos"][-1]}')
