@@ -21,11 +21,11 @@ cell_color = [
     ]
 
 init_lifes = 1
-special = 5
+special = 10
 start_pos_x = 0
 start_pos_y = 0
 life_color = 100 / init_lifes
-stop_before = 0
+stop_before = 10
 
 init_map = load_init_map()
 init_map = init_map[10:40, 20:50]
@@ -196,8 +196,11 @@ while running:
             # Fill the background with white
         screen.fill((255, 255, 255))
         # draw the map
+        path_i = hero['map']
+        if path_i > len(solver['paths']) - 1:
+            path_i = len(solver['paths']) - 1
         draw_map(screen, actual_map,
-                 solver['paths'][hero['map']],
+                 solver['paths'][path_i],
                  cell_size, (hero['x'], hero['y']),
                  font3)
 
@@ -214,24 +217,28 @@ while running:
             hero['step'] -= 1
             hero['map'] -= 1
             # actual_map = solver['maps'][hero['step']]
-            actual_map = maps[hero['step']]
+            actual_map = maps[hero['map']]
             # get hero new position
             if hero_moves[hero['step']] == 'U':
                 hero['y'] += 1
-            if hero_moves[hero['step']] == 'D':
+            elif hero_moves[hero['step']] == 'D':
                 hero['y'] -= 1
-            if hero_moves[hero['step']] == 'L':
+            elif hero_moves[hero['step']] == 'L':
                 hero['x'] += 1
-            if hero_moves[hero['step']] == 'R':
+            elif hero_moves[hero['step']] == 'R':
                 hero['x'] -= 1
             else:  # must be A command
                 hero['step'] -= 2  # back another 2 positions
+                hero['map'] += 1  # maintain map
             # actual_map[hero["y"]][hero['x']] = 2
             # Fill the background with white
         # screen.fill((255, 255, 255))
         # draw the map
+        path_i = hero['map']
+        if path_i > len(solver['paths']) - 1:
+            path_i = len(solver['paths']) - 1
         draw_map(screen, actual_map,
-                 solver['paths'][hero['step']],
+                 solver['paths'][path_i],
                  cell_size, (hero['x'], hero['y']),
                  font3)
 

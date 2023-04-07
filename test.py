@@ -114,29 +114,46 @@ def solution_test(init_map: np.array,
     # if with special try shorting the end
     print(f'Solution length: {len(moves)}')
     if special > 0:
-        print('try solve final with special')
-        final_moves = {'part_pos': np.zeros(1)}
-        for back_steps in range(special, (special * 10
-                                          if special * 10 < len(maps)
-                                          else len(maps) - 1)):
-            final = complete_solution_3(
-                maps[-back_steps - 1],
-                part_positions[-back_steps - 1][1],
-                part_positions[-back_steps - 1][0],
+        if stop_distance > 0:
+            print('Complete path with special')
+            final_moves = complete_solution_3(
+                maps[-1],
+                part_positions[-1][1],
+                part_positions[-1][0],
                 special
                 )
-            if (final['pos_x'] != cols - 1 or
-               final['pos_y'] != rows - 1):
-                continue
-            if final['part_pos'].shape[0] > final_moves['part_pos'].shape[0]:
-                final_moves = deepcopy(final)     # save last conquered
-                best_back = back_steps
+            best_back = 0
+            print('Complete with specials')
+            final_len = (len(moves) +
+                         len(final_moves['part_pos']))
+            moves = moves + final_moves['moves']
+        else:
+            print('try solve final with special')
+            final_moves = {'part_pos': np.zeros(1)}
+            best_save_pos = 0
+            for back_steps in range(special, (special * 10
+                                              if special * 10 < len(maps)
+                                              else len(maps) - 1)):
+                final = complete_solution_3(
+                    maps[-back_steps - 1],
+                    part_positions[-back_steps - 1][1],
+                    part_positions[-back_steps - 1][0],
+                    special
+                    )
+                if (final['pos_x'] != cols - 1 or
+                   final['pos_y'] != rows - 1):
+                    continue
+                save_pos = back_steps - final['part_pos'].shape[0]
+                if save_pos > best_save_pos:
+                    final_moves = deepcopy(final)     # save last conquered
+                    best_back = back_steps
+                    best_save_pos = save_pos
 
-        print(f'With {best_back} final moves')
+            print(f'With {best_back} final moves')
 
-        final_len = (len(moves) - best_back - 1 +
-                     len(final_moves['part_pos']))
-        moves = moves[:(-best_back)] + final_moves['moves']
+            final_len = (len(moves) - best_back - 1 +
+                         len(final_moves['part_pos']))
+            moves = moves[:(-best_back)] + final_moves['moves']
         print(f'Final solution length: {final_len}')
 
         part_positions = np.concatenate([part_positions[:(-best_back - 1)],
@@ -162,6 +179,20 @@ def complete_solution_3(actual_map: np.array,
     pos_y = start_pos_y
     part_positions[0] = pos_y, pos_x
     while special > 0 and (pos_x < cols - 1 or pos_y < rows - 1):
+        # check last movement
+        if (cols - 1 - pos_x) + (rows - 1 - pos_y) == 1:
+            if pos_x == cols - 1:
+                # lest D
+                final_moves.append('D')
+                pos_y += 1
+            elif pos_y == rows - 1:
+                # last R
+                final_moves.append('R')
+                pos_x += 1
+            next_map = next_step_map_convolve(next_map)
+            part_positions = np.append(part_positions, [[pos_y, pos_x]],
+                                       axis=0)
+            break
         sx = pos_x - 1
         sy = pos_y - 1
         ex = pos_x + 3
@@ -188,11 +219,11 @@ def complete_solution_3(actual_map: np.array,
             cell_d = 5
         else:
             cell_d = next_map[pos_y + 1, pos_x]
-        if pos_y == rows - 2:
+        if pos_y >= rows - 2:
             adjs_r = np.sum(next_map[sy:ey, pos_x:ex]) - cell_r
         else:
             adjs_r = np.sum(next_map[sy:ey - 1, pos_x:ex]) - cell_r
-        if pos_x == cols - 2:
+        if pos_x >= cols - 2:
             adjs_d = np.sum(next_map[pos_y:ey, sx:ex]) - cell_d
         else:
             adjs_d = np.sum(next_map[pos_y:ey, sx:ex - 1]) - cell_d
@@ -225,14 +256,14 @@ def complete_solution_3(actual_map: np.array,
                     # x 0 1
                     # 1 1 1
                     # then must change 2 cells
-                    if (pos_y == 0 and cell_r == 0 and adjs_r == 4):
+                    if (pos_y == (rows - 1) and cell_r == 0 and adjs_r == 4):
                         if special < 2:
                             break
                         final_moves.append('A')
-                        final_moves.append(str(pos_y + 1))
+                        final_moves.append(str(pos_y - 1))
                         final_moves.append(str(pos_x))
-                        next_map[pos_y + 1,
-                                 pos_x] = 1 - next_map[pos_y + 1, pos_x]
+                        next_map[pos_y - 1,
+                                 pos_x] = 1 - next_map[pos_y - 1, pos_x]
                         final_moves.append('A')
                         final_moves.append(str(pos_y))
                         final_moves.append(str(pos_x + 1))
@@ -241,15 +272,16 @@ def complete_solution_3(actual_map: np.array,
                                                            pos_x + 1]
                         special -= 2
                     else:
-                        y, x = find_adj(cell_r, next_map[sy:pos_y + 2,
-                                                         pos_x:pos_x + 3])
+                        y, x = find_adj2(cell_r, next_map[sy:pos_y + 2,
+                                                          pos_x:pos_x + 3],
+                                         from_left=True)
                         # change next position state
                         final_moves.append('A')
-                        final_moves.append(str(pos_y + y))
+                        final_moves.append(str(sy + y))
                         final_moves.append(str(pos_x + x))
                         # invert the cell
-                        next_map[pos_y + y,
-                                 pos_x + x] = 1 - next_map[pos_y + y,
+                        next_map[sy + y,
+                                 pos_x + x] = 1 - next_map[sy + y,
                                                            pos_x + x]
                         special -= 1
                     final_moves.append('R')
@@ -284,14 +316,14 @@ def complete_solution_3(actual_map: np.array,
                     # 0 1
                     # 1 1
                     # then must change 2 cells
-                    if (pos_x == 0 and cell_d == 0 and adjs_d == 4):
+                    if (pos_x == (cols - 1) and cell_d == 0 and adjs_d == 4):
                         if special < 2:
                             break
                         final_moves.append('A')
                         final_moves.append(str(pos_y))
-                        final_moves.append(str(pos_x + 1))
+                        final_moves.append(str(pos_x - 1))
                         next_map[pos_y,
-                                 pos_x + 1] = 1 - next_map[pos_y, pos_x + 1]
+                                 pos_x - 1] = 1 - next_map[pos_y, pos_x - 1]
                         final_moves.append('A')
                         final_moves.append(str(pos_y + 1))
                         final_moves.append(str(pos_x))
@@ -300,16 +332,17 @@ def complete_solution_3(actual_map: np.array,
                                                        pos_x]
                         special -= 2
                     else:
-                        y, x = find_adj(cell_d, next_map[pos_y:pos_y + 3,
-                                                         sx:pos_x + 2])
+                        y, x = find_adj2(cell_d, next_map[pos_y:pos_y + 3,
+                                                          sx:pos_x + 2],
+                                         from_left=False)
                         # change next position state
                         final_moves.append('A')
                         final_moves.append(str(pos_y + y))
-                        final_moves.append(str(pos_x + x))
+                        final_moves.append(str(sx + x))
                         # invert the cell
                         next_map[pos_y + y,
-                                 pos_x + x] = 1 - next_map[pos_y + y,
-                                                           pos_x + x]
+                                 sx + x] = 1 - next_map[pos_y + y,
+                                                        sx + x]
                         special -= 1
                     final_moves.append('D')
                     pos_y += 1
@@ -487,19 +520,23 @@ def find_adj(value: int, adjs: np.array, from_lef: bool) -> tuple[int, int]:
 def find_adj2(value: int, adjs: np.array, from_left: bool) -> tuple[int, int]:
     h, w = adjs.shape
     if h == 2:  # bottom cell
-        for y, x in [(0, 0), (0, 1), (1, 2), (0, 2)]:
+        for y, x in [(0, 0), (0, 1), (0, 2), (1, 2)]:
             if adjs[y, x] == value:
                 return (y, x)
     if w == 2:  # right cell
-        for y, x in [(0, 0), (1, 0), (1, 1), (2, 1), (2, 0)]:
+        for y, x in [(0, 0), (1, 0), (2, 0), (2, 1)]:
             if adjs[y, x] == value:
                 return (y, x)
     if from_left:
-        for y, x in [(0, 0), (0, 1), (0, 2), (1, 0), (1, 2),
-                    (2, 0), (2, 1), (2, 2)]:
+        for y, x in [(0, 0), (0, 1), (0, 2), (1, 2),
+                     (2, 0), (2, 1), (2, 2)]:
             if adjs[y, x] == value:
                 return (y, x)
-    else: 
+    else:
+        for y, x in [(0, 0), (0, 2), (1, 0), (1, 2),
+                     (2, 0), (2, 1), (2, 2)]:
+            if adjs[y, x] == value:
+                return (y, x)
 
 
 if __name__ == '__main__':
@@ -510,7 +547,7 @@ if __name__ == '__main__':
     init_map[-1, -1] = 0  # 4
 
     # solution = solution_test(init_map, 1, stop_distance=2)['moves']
-    solution = solution_test(init_map, 1, special=5)
+    solution = solution_test(init_map, 1, stop_distance=10, special=10)
     solution_moves = solution['moves']
     solution_maps = solution['maps']
     solution_pos = solution['part_pos']
