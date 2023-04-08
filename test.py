@@ -98,12 +98,20 @@ def solution_test(init_map: np.array,
                 break  # break for
 
     if no_sol:
+        print('No solution found, searching the closest to target')
         for i in range(len(paths) - 1, 0, -1):
             find_live = np.where(paths[i] == 1)
             if len(find_live[0]) > 0:
-                stop_y = find_live[0][0]
-                stop_x = find_live[0][1]
-                break
+                # find the longest
+                dist = cols + rows
+                found_y = find_live[0]
+                found_x = find_live[1]
+                for i in range(len(found_y)):
+                    new_dist = cols - found_x[i] + rows - found_y[i]
+                    if new_dist < dist:
+                        dist = new_dist
+                        stop_y = found_y[i]
+                        stop_x = found_x[i]
 
     # find way back
     curr_y = stop_y
