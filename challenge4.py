@@ -25,6 +25,7 @@ missing_part = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                 [1, 0, 1, 0, 1, 1, 0, 1, 1, 0],
                 [1, 1, 1, 1, 1, 0, 0, 0, 0, 0]]
 init_map = load_init_map(r'inputs/input4.txt', missing_part)
+# init_map = load_init_map('inputs/test_patterns2.txt', missing_part)
 
 # %% Try to solve it
 model = A_star(init_map, heuristics_type='manhattan',

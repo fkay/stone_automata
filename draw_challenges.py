@@ -88,8 +88,18 @@ def draw_pixel_map(screen: pygame.Surface, map: np.array,
 
 solution_file_path = r'output5_20230407_2033.txt'
 # solution_file_path = r'solution_20230330_1931.txt'
-# init_map = load_init_map('inputs/test_patterns.txt')
-init_map = load_init_map('inputs/input5.txt')
+missing_part = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 0, 0, 0, 0, 0, 1, 0, 0, 1],
+                [1, 0, 1, 1, 0, 1, 1, 1, 0, 1],
+                [1, 1, 1, 0, 0, 1, 0, 1, 0, 0],
+                [1, 0, 1, 1, 0, 0, 0, 1, 1, 0],
+                [1, 0, 0, 1, 0, 1, 0, 1, 0, 0],
+                [1, 1, 0, 1, 0, 1, 1, 1, 1, 0],
+                [1, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+                [1, 0, 1, 0, 1, 1, 0, 1, 1, 0],
+                [1, 1, 1, 1, 1, 0, 0, 0, 0, 0]]
+init_map = load_init_map(r'inputs/input4.txt', missing_part)
+# init_map = load_init_map('inputs/test_patterns2.txt', missing_part)
 # init_map = init_map[10:30, 20:40]
 # init_map[0, 0] = 3
 # init_map[-1, -1] = 4
@@ -148,7 +158,8 @@ pygame.display.flip()
 
 offset_x = 0
 offset_y = 0
-offset_step = 5
+offset_step = 10
+offset_mult = 20
 
 while running:
     for event in pygame.event.get():
@@ -178,7 +189,11 @@ while running:
             if event.key == pygame.K_d:
                 continuous = False
             if event.key == pygame.K_UP:
-                offset_y -= offset_step
+                mods = pygame.key.get_mods()
+                if mods & pygame.KMOD_CTRL:
+                    offset_y -= offset_step * offset_mult
+                else:
+                    offset_y -= offset_step
                 if offset_y < 0:
                     offset_y = 0
                 # draw_pixel_map(screen, actual_map, (hero['x'], hero['y']),
@@ -188,8 +203,16 @@ while running:
                          (hero['x'], hero['y']),
                          offset_x, offset_y)
                 pygame.display.flip()
+                pygame.display.set_caption(
+                    f'Solving: step: {hero["step"]}/{sol_length}' +
+                    f' | off_x: {offset_x} | off_y: {offset_y}' +
+                    f' | particle pos: ({hero["x"]}, {hero["y"]})')
             if event.key == pygame.K_DOWN:
-                offset_y += offset_step
+                mods = pygame.key.get_mods()
+                if mods & pygame.KMOD_CTRL:
+                    offset_y += offset_step * offset_mult
+                else:
+                    offset_y += offset_step
                 if offset_y > init_map.shape[0] - cell_rows:
                     offset_y = init_map.shape[0] - cell_rows
                 # draw_pixel_map(screen, actual_map, (hero['x'], hero['y']),
@@ -199,8 +222,16 @@ while running:
                          (hero['x'], hero['y']),
                          offset_x, offset_y)
                 pygame.display.flip()
+                pygame.display.set_caption(
+                    f'Solving: step: {hero["step"]}/{sol_length}' +
+                    f' | off_x: {offset_x} | off_y: {offset_y}' +
+                    f' | particle pos: ({hero["x"]}, {hero["y"]})')
             if event.key == pygame.K_LEFT:
-                offset_x -= offset_step
+                mods = pygame.key.get_mods()
+                if mods & pygame.KMOD_CTRL:
+                    offset_x -= offset_step * offset_mult
+                else:
+                    offset_x -= offset_step
                 if offset_x < 0:
                     offset_x = 0
                 # draw_pixel_map(screen, actual_map, (hero['x'], hero['y']),
@@ -210,8 +241,16 @@ while running:
                          (hero['x'], hero['y']),
                          offset_x, offset_y)
                 pygame.display.flip()
+                pygame.display.set_caption(
+                    f'Solving: step: {hero["step"]}/{sol_length}' +
+                    f' | off_x: {offset_x} | off_y: {offset_y}' +
+                    f' | particle pos: ({hero["x"]}, {hero["y"]})')
             if event.key == pygame.K_RIGHT:
-                offset_x += offset_step
+                mods = pygame.key.get_mods()
+                if mods & pygame.KMOD_CTRL:
+                    offset_x += offset_step * offset_mult
+                else:
+                    offset_x += offset_step
                 if offset_x > init_map.shape[1] - cell_cols:
                     offset_x = init_map.shape[1] - cell_cols
                 # draw_pixel_map(screen, actual_map, (hero['x'], hero['y']),
@@ -221,6 +260,10 @@ while running:
                          (hero['x'], hero['y']),
                          offset_x, offset_y)
                 pygame.display.flip()
+                pygame.display.set_caption(
+                    f'Solving: step: {hero["step"]}/{sol_length}' +
+                    f' | off_x: {offset_x} | off_y: {offset_y}' +
+                    f' | particle pos: ({hero["x"]}, {hero["y"]})')
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_a:
                 continuous = False

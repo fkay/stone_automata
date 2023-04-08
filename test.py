@@ -51,12 +51,14 @@ def solution_test(init_map: np.array,
     i = 0
     maps_block = 100
     j = 0
+    no_sol = False
     while i < 50_0000:
         if ((i + 1) % maps_block == 0):
             print(f'Created {i + 1} maps')
             # check no solution
             if np.sum(paths[i]) == 0:
-                return None
+                no_sol = True
+                break
         if (i % maps_block == 0):  # have 101 maps
             if False:  # save_maps:
                 np.savez(f'outputs/maps{i}.npz', maps[:maps_block])
@@ -106,13 +108,32 @@ def solution_test(init_map: np.array,
             if found_stop:
                 break  # break for
 
+    paths_len = len(paths)
+
+    if no_sol:
+        dist = cols + rows
+        print('No solution found, searching the closest to target')
+        for i in range(len(paths) - 1, 0, -1):
+            find_live = np.where(paths[i] == 1)
+            if len(find_live[0]) > 0:
+                # find the longest
+                found_y = find_live[0]
+                found_x = find_live[1]
+                for j in range(len(found_y)):
+                    new_dist = (cols - found_x[j]) + (rows - found_y[j])
+                    if new_dist < dist:
+                        dist = new_dist
+                        stop_y = found_y[j]
+                        stop_x = found_x[j]
+                        paths_len = i + 1
+
     # find way back
     curr_y = stop_y
     curr_x = stop_x
     moves = []
-    part_positions = np.zeros((len(paths), 2), dtype=np.int32)
+    part_positions = np.zeros((paths_len, 2), dtype=np.int32)
 
-    for i in range(len(paths) - 2, -1, -1):
+    for i in range(paths_len - 2, -1, -1):
         part_positions[i + 1] = curr_y, curr_x
         # if saved must reload maps butt only if checking lifes
         if init_lifes > 1:

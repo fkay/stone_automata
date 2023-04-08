@@ -25,7 +25,7 @@ special = 0
 start_pos_x = 0
 start_pos_y = 0
 life_color = 100 / init_lifes
-stop_before = 10
+stop_before = 0
 
 init_map = load_init_map()
 init_map = init_map[10:40, 20:50]
