@@ -15,12 +15,10 @@ def solution_test(init_map: np.array,
                   start_pos_y: int = 0,
                   stop_distance: int = 0,
                   special: int = 0,
-                  save_maps: bool = False) -> dict:
+                  save_maps: bool = False,
+                  old_particles: list = [],
+                  insert_t = 0) -> dict:
     rows, cols = init_map.shape
-
-    k = np.array([[0, 1, 0],
-                 [1, 0, 1],
-                 [0, 1, 0]], dtype=np.int8)
 
     # init_solution = init_solution_3(init_map, special)
     # init_moves = init_solution['moves']
@@ -29,6 +27,14 @@ def solution_test(init_map: np.array,
     # start_pos_y = init_solution['pos_y']
     # print(f'End initial phase, stopped at: row={start_pos_y}, ' +
     #       f'col={start_pos_x}')
+
+    # check if a old particle prevents the inti
+    for p in old_particles:
+        t = insert_t - p['t']
+        if t < len(p['part_pos']):
+            p_pos = p['part_pos'][t]
+            if p_pos[0] == 0 and p_pos[1] == 0:
+                return None
 
     # need keep maps to check where it kills lifes
     maps = [init_map]
@@ -50,7 +56,7 @@ def solution_test(init_map: np.array,
             print(f'Created {i + 1} maps')
             # check no solution
             if np.sum(paths[i]) == 0:
-                break
+                return None
         if (i % maps_block == 0):  # have 101 maps
             if False:  # save_maps:
                 np.savez(f'outputs/maps{i}.npz', maps[:maps_block])
@@ -76,6 +82,11 @@ def solution_test(init_map: np.array,
             paths[i] = paths[i] - maps[i - j]
         else:
             paths[i] = paths[i] - next_map
+            # check particles and clear path
+            for p in old_particles:
+                if i + insert_t - p['t'] < len(p['part_pos']):
+                    p_old_pos = p['part_pos'][i + insert_t - p['t']]
+                    paths[i][p_old_pos[0], p_old_pos[1]] = 0
         paths[i][paths[i] < 0] = 0
         if paths[i][-1, -1] > 0:
             break

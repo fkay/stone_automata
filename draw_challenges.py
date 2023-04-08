@@ -86,9 +86,10 @@ def draw_pixel_map(screen: pygame.Surface, map: np.array,
     pixel_array.close()
 
 
-solution_file_path = r'output1_20230405_1044.txt'
+solution_file_path = r'output5_20230407_2033.txt'
 # solution_file_path = r'solution_20230330_1931.txt'
-init_map = load_init_map('inputs/test_patterns.txt')
+# init_map = load_init_map('inputs/test_patterns.txt')
+init_map = load_init_map('inputs/input5.txt')
 # init_map = init_map[10:30, 20:40]
 # init_map[0, 0] = 3
 # init_map[-1, -1] = 4

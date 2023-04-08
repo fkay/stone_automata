@@ -24,12 +24,37 @@ solution = solution_test(init_map,
 
 particle_moves = solution['moves']
 part_pos = solution['part_pos']
+old_part = [{'t': 0, 'part_pos': part_pos}]
+part_moves = [{'t': 0, 'moves': particle_moves}]
+
+print(f'First Solution length:  {len(particle_moves)}')
+
+# try new particle every 2 t
+for t in range(3, len(particle_moves), 6):
+    print(f'try insert particle at {t}')
+    next_sol = solution_test(init_map,
+                             init_lifes=1,
+                             old_particles=old_part,
+                             insert_t=t)
+    if next_sol is not None:
+        old_part.append({'t': t, 'part_pos': next_sol['part_pos']})
+        part_moves.append({'t': t, 'moves': next_sol['moves']})
 
 # %% write the solution
-print(f'Solution length:  {len(particle_moves)}')
 moves = (' ').join(particle_moves)
 print(moves)
-with open(f'output5_{datetime.now().strftime(r"%Y%m%d_%H%M")}.txt',
+# with open(f'output5_{datetime.now().strftime(r"%Y%m%d_%H%M")}.txt',
+#           'w') as file:
+#     file.write(moves)
+# print(f'Final pos: {solution["part_pos"][-1]}')
+
+with open(f'output5.txt{datetime.now().strftime(r"%Y%m%d_%H%M")}.txt',
           'w') as file:
-    file.write(moves)
-print(f'Final pos: {solution["part_pos"][-1]}')
+    for p in part_moves:
+        file.write(str(p['t']) + ' ')
+        file.write((' ').join(p['moves']))
+        file.write('\n')
+
+# for p in old_part:
+#     print(str(p['t']))
+#     print(p['part_pos'][:30])

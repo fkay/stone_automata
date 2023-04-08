@@ -21,7 +21,7 @@ cell_color = [
     ]
 
 init_lifes = 1
-special = 10
+special = 0
 start_pos_x = 0
 start_pos_y = 0
 life_color = 100 / init_lifes
