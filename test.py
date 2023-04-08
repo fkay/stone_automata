@@ -45,11 +45,13 @@ def solution_test(init_map: np.array,
     i = 0
     maps_block = 100
     j = 0
+    no_sol = False
     while i < 50_0000:
         if ((i + 1) % maps_block == 0):
             print(f'Created {i + 1} maps')
             # check no solution
             if np.sum(paths[i]) == 0:
+                no_sol = True
                 break
         if (i % maps_block == 0):  # have 101 maps
             if False:  # save_maps:
@@ -94,6 +96,14 @@ def solution_test(init_map: np.array,
                 iy += 1
             if found_stop:
                 break  # break for
+
+    if no_sol:
+        for i in range(len(paths) - 1, 0, -1):
+            find_live = np.where(paths[i] == 1)
+            if len(find_live[0]) > 0:
+                stop_y = find_live[0][0]
+                stop_x = find_live[0][1]
+                break
 
     # find way back
     curr_y = stop_y
