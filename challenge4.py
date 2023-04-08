@@ -10,6 +10,10 @@ from test import solution_test
 
 
 # %% load the initial map
+# the missing part was resolved manually following the rule
+# with more time, try like an algorithm like wave function collapse to reolve
+# and checking the rules with simple compare and depth search for coninous
+# blocks
 missing_part = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                 [1, 0, 0, 0, 0, 0, 1, 0, 0, 1],
                 [1, 0, 1, 1, 0, 1, 1, 1, 0, 1],
@@ -28,12 +32,13 @@ model = A_star(init_map, heuristics_type='manhattan',
                init_lifes=1)
 # particle_moves = model.solve()
 # %% try solving with other method
-# particle_moves = solution_test(init_map, 1)['moves']
+# with init lifes = 1 dont store the pass maps
+particle_moves = solution_test(init_map, 1)['moves']
 
 # %% write the solution
-# print(f'Solution length:  {len(particle_moves)}')
-# solution = (' ').join(particle_moves)
-# print(solution)
-# with open(f'output3_{datetime.now().strftime(r"%Y%m%d_%H%M")}.txt',
-#           'w') as file:
-#     file.write(solution)
+print(f'Solution length:  {len(particle_moves)}')
+solution = (' ').join(particle_moves)
+print(solution)
+with open(f'output4_{datetime.now().strftime(r"%Y%m%d_%H%M")}.txt',
+          'w') as file:
+    file.write(solution)
