@@ -5,17 +5,35 @@ from scipy import signal
 
 # Load the map
 def load_init_map(
-        file_path: str = r'./inputs/input_stone_automata.txt'
+        file_path: str = r'./inputs/input_stone_automata.txt',
+        piece_replace: list[list[int]] = None
         ) -> np.array:
     with open(file_path, encoding='utf-8') as file:
         rows = file.readlines()
     init_map = []
+    missing_part_x = -1
+    missing_part_y = 0
     for r in rows:
+        if missing_part_x == -1:
+            missing_part_x = r.find('x')
+        if missing_part_x == -1:
+            missing_part_y += 1
+        r = r.replace('x', '9')
         init_map.append([int(v) for v in r.split()])
     # make start and end position always zeros
     init_map[0][0] = 0
     init_map[-1][-1] = 0
-    return np.array(init_map, np.int8)
+    missing_part_x //= 2
+    if piece_replace is not None:
+        for iy in range(missing_part_y, missing_part_y + len(piece_replace)):
+            for ix in range(missing_part_x,
+                            missing_part_x + len(piece_replace[0])):
+                init_map[iy][ix] = piece_replace[
+                                            iy - missing_part_y
+                                        ][
+                                            ix - missing_part_x
+                                        ]
+    return np.array(init_map, np.int8)  # , missing_part_y, missing_part_x
 
 
 def next_step_map(old_map: list) -> list:

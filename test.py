@@ -3,6 +3,7 @@ Test calculating maps in advance and try find reverse path
 """
 # %% libs
 import numpy as np
+import gc
 # from scipy import signal
 from copy import deepcopy
 from automata import load_init_map, next_step_map_convolve
@@ -13,7 +14,8 @@ def solution_test(init_map: np.array,
                   start_pos_x: int = 0,
                   start_pos_y: int = 0,
                   stop_distance: int = 0,
-                  special: int = 0) -> dict:
+                  special: int = 0,
+                  save_maps: bool = False) -> dict:
     rows, cols = init_map.shape
 
     k = np.array([[0, 1, 0],
@@ -30,6 +32,8 @@ def solution_test(init_map: np.array,
 
     # need keep maps to check where it kills lifes
     maps = [init_map]
+    if init_lifes <= 1:
+        next_map = init_map
     paths = [np.zeros(init_map.shape, np.int8)]
 
     # %% find the paths to start
@@ -39,14 +43,24 @@ def solution_test(init_map: np.array,
     stop_x = cols - 1
 
     i = 0
+    maps_block = 100
+    j = 0
     while i < 50_0000:
-        if ((i + 1) % 100 == 0):
+        if ((i + 1) % maps_block == 0):
             print(f'Created {i + 1} maps')
             # check no solution
             if np.sum(paths[i]) == 0:
                 break
-
-        maps.append(next_step_map_convolve(maps[i]))
+        if (i % maps_block == 0):  # have 101 maps
+            if False:  # save_maps:
+                np.savez(f'outputs/maps{i}.npz', maps[:maps_block])
+                j += maps_block
+                maps = [maps[maps_block]]
+                gc.collect()
+        if init_lifes > 1:
+            maps.append(next_step_map_convolve(maps[i - j]))
+        else:
+            next_map = next_step_map_convolve(next_map)
         # paths.append((signal.convolve2d(paths[i], k, mode='same') > 0))
         new_values = np.zeros((1, paths[0].shape[1]), dtype=np.int8)
         next_path = np.concatenate((new_values, paths[i], new_values), axis=0)
@@ -58,7 +72,10 @@ def solution_test(init_map: np.array,
         paths.append(np.maximum(next_path, next_path_b))
         i += 1
         # paths[i] = (paths[i] * (~(maps[i] == 1))) * np.int8(1)
-        paths[i] = paths[i] - maps[i]
+        if init_lifes > 1:
+            paths[i] = paths[i] - maps[i - j]
+        else:
+            paths[i] = paths[i] - next_map
         paths[i][paths[i] < 0] = 0
         if paths[i][-1, -1] > 0:
             break
@@ -86,7 +103,12 @@ def solution_test(init_map: np.array,
 
     for i in range(len(paths) - 2, -1, -1):
         part_positions[i + 1] = curr_y, curr_x
-        curr_value = paths[i + 1][curr_y, curr_x] + maps[i + 1][curr_y, curr_x]
+        # if saved must reload maps butt only if checking lifes
+        if init_lifes > 1:
+            curr_value = (paths[i + 1][curr_y, curr_x] +
+                          maps[i + 1 - j][curr_y, curr_x])
+        else:
+            curr_value = paths[i + 1][curr_y, curr_x]
         # check up
         if curr_y > 0 and paths[i][curr_y - 1, curr_x] >= curr_value:
             curr_y -= 1
@@ -547,7 +569,8 @@ if __name__ == '__main__':
     init_map[-1, -1] = 0  # 4
 
     # solution = solution_test(init_map, 1, stop_distance=2)['moves']
-    solution = solution_test(init_map, 1, stop_distance=10, special=10)
+    # solution = solution_test(init_map, 1, stop_distance=10, special=10)
+    solution = solution_test(init_map, 1)
     solution_moves = solution['moves']
     solution_maps = solution['maps']
     solution_pos = solution['part_pos']
