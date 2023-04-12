@@ -42,8 +42,8 @@ def solution_test(init_map: np.array,
         next_map = init_map
     paths = [np.zeros(init_map.shape, np.int8)]
 
-    t0 = 0
-    while t0 < insert_t:
+    # advance map to inerted time
+    for _ in range(insert_t):
         next_map = next_step_map_convolve(next_map)
 
     # %% find the paths to start
@@ -115,6 +115,9 @@ def solution_test(init_map: np.array,
     paths_len = len(paths)
 
     if no_sol:
+        # check if is not the first particle and have no solution return None
+        if insert_t > 0:
+            return None
         dist = cols + rows
         print('No solution found, searching the closest to target')
         for i in range(len(paths) - 1, 0, -1):
@@ -139,7 +142,7 @@ def solution_test(init_map: np.array,
 
     for i in range(paths_len - 2, -1, -1):
         part_positions[i + 1] = curr_y, curr_x
-        # if saved must reload maps butt only if checking lifes
+        # if saved must reload maps but only if checking lifes
         if init_lifes > 1:
             curr_value = (paths[i + 1][curr_y, curr_x] +
                           maps[i + 1 - j][curr_y, curr_x])
@@ -156,7 +159,7 @@ def solution_test(init_map: np.array,
             moves.append('R')
             continue
         # check right
-        if curr_x < cols - 2 and paths[i][curr_y, curr_x + 1] >= curr_value:
+        if curr_x < cols - 1 and paths[i][curr_y, curr_x + 1] >= curr_value:
             curr_x += 1
             moves.append('L')
             continue

@@ -12,6 +12,9 @@ cell_color = [
         (255, 255, 0)  # 4 - end - yellow
     ]
 
+init_lifes = 1
+life_color = 100 / init_lifes
+
 
 def draw_text(screen: pygame.Surface, font: pygame.font.Font,
               color: tuple[int, int, int],
@@ -24,6 +27,7 @@ def draw_text(screen: pygame.Surface, font: pygame.font.Font,
 
 def draw_map(screen: pygame.Surface,
              map: np.array,
+             paths: np.array,
              cell_rows: int,
              cell_cols: int,
              cell_size: tuple[int, int],
@@ -31,7 +35,8 @@ def draw_map(screen: pygame.Surface,
              t: int,
              font,
              offset_x: int = 0,
-             offset_y: int = 0) -> None:
+             offset_y: int = 0,
+             part_path: int = 34) -> None:
     """
     draw the map in a pygame surface
 
@@ -50,23 +55,41 @@ def draw_map(screen: pygame.Surface,
             pygame.draw.rect(screen, cell_color[cell],
                              (i_x * cell_size[0] + 1, i_y * cell_size[1] + 1,
                               cell_size[0] - 2, cell_size[1] - 2))
+            if (paths is not None and t >= part_path
+               and t - part_path < len(paths)):
+                cell_path = paths[t - part_path][i_y + offset_y,
+                                                 i_x + offset_x]
+                if cell_path > 0:
+                    pygame.draw.rect(
+                        screen,
+                        (196 - (cell_path - 1) * life_color,
+                         196 - (init_lifes - cell_path) * life_color,
+                         255),
+                        (i_x * cell_size[0] + 3,
+                         i_y * cell_size[1] + 3,
+                         cell_size[0] - 6, cell_size[1] - 6))
+                    draw_text(
+                        screen, font, (0, 0, 0),
+                        str(cell_path),
+                        i_x * cell_size[0] + cell_size[0] / 2,
+                        i_y * cell_size[1] + cell_size[1] / 2)
     for h, hero in enumerate(heros):
         if t >= 0 and hero['t'] <= t:
             it = t - hero['t']
-            if it > len(hero['pos']):
+            if it > len(hero['pos']) - 1:
                 it = len(hero['pos']) - 1
-            hero_y = hero['pos'][it][0]
-            hero_x = hero['pos'][it][1]
+            hero_y = hero['pos'][it][0] - offset_y
+            hero_x = hero['pos'][it][1] - offset_x
+            if hero_x < 0 or hero_y < 0:
+                continue
             pygame.draw.circle(screen, cell_color[2],
-                               ((hero_x - offset_x) * cell_size[0] +
-                                cell_size[0] / 2,
-                               (hero_y - offset_y) * cell_size[1] +
-                               cell_size[1] / 2),
+                               (hero_x * cell_size[0] + cell_size[0] / 2,
+                                hero_y * cell_size[1] + cell_size[1] / 2),
                                cell_size[0] // 2 - 2)
             draw_text(screen, font, (255, 255, 255),
                       str(h + 1),
-                      (hero_x - offset_x) * cell_size[0] + cell_size[0] / 2,
-                      (hero_y - offset_y) * cell_size[1] + cell_size[1] / 2)
+                      hero_x * cell_size[0] + cell_size[0] / 2,
+                      hero_y * cell_size[1] + cell_size[1] / 2)
 
 
 def draw_pixel_map(screen: pygame.Surface, map: np.array,
@@ -99,7 +122,7 @@ def draw_pixel_map(screen: pygame.Surface, map: np.array,
     pixel_array.close()
 
 
-solution_file_path = r'output5_20230407_2354.txt'
+solution_file_path = r'output5_20230412_1459.txt'
 # solution_file_path = r'solution_20230330_1931.txt'
 # missing_part = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 #                 [1, 0, 0, 0, 0, 0, 1, 0, 0, 1],
@@ -117,6 +140,10 @@ init_map = load_init_map('inputs/input5.txt')
 # init_map = init_map[10:30, 20:40]
 # init_map[0, 0] = 3
 # init_map[-1, -1] = 4
+
+# load the path desired to track (saved with numpy savez)
+paths = np.load('outputs/paths_34.npz')['paths']
+# path = None
 
 # %% Prepare pygame
 # Pygame Configuration
@@ -137,13 +164,6 @@ screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
 font = pygame.font.SysFont('Arial', 40, bold=True)
 font2 = pygame.font.SysFont('Arial', 20, bold=True)
 font3 = pygame.font.SysFont('Arial', 10, bold=True)
-
-# %% Game loop
-running = True
-step = False
-continuous = False
-actual_map = init_map.copy()
-# actual_map[hero["y"]][hero['x']] = 2
 
 # Solve the path
 screen.fill((255, 255, 255))
@@ -171,13 +191,13 @@ for hero in heros:
     actual_pos = [0, 0]
     positions = [tuple(actual_pos)]
     for move in hero['moves']:
-        if move == 'U':
+        if move.strip() == 'U':
             actual_pos[0] -= 1
-        if move == 'D':
+        if move.strip() == 'D':
             actual_pos[0] += 1
-        if move == 'L':
+        if move.strip() == 'L':
             actual_pos[1] -= 1
-        if move == 'R':
+        if move.strip() == 'R':
             actual_pos[1] += 1
         positions.append(tuple(actual_pos))
     hero_pos['pos'] = positions
@@ -194,6 +214,15 @@ draw_text(screen, font2, (255, 128, 0), 'A - hold for continous move',
           width // 2, height // 2 + 60)
 pygame.display.flip()
 
+# %% Game loop
+running = True
+step = False
+continuous = False
+actual_map = init_map.copy()
+maps = [init_map]
+# actual_map[hero["y"]][hero['x']] = 2
+reverse_step = False
+
 offset_x = 0
 offset_y = 0
 offset_step = 10
@@ -202,11 +231,12 @@ offset_mult = 20
 hero = {
     'x': 0,
     'y': 0,
-    'step': -1
+    'step': -1,
+    'map': 0
 }
 
 while running:
-    if hero['step'] >= 0:
+    if hero['step'] >= 0 and hero['step'] < len(heros_pos[0]['pos']):
         hero['x'] = heros_pos[0]['pos'][hero['step']][1]
         hero['y'] = heros_pos[0]['pos'][hero['step']][0]
     for event in pygame.event.get():
@@ -221,7 +251,7 @@ while running:
                 actual_map[mous_y, mous_x] = 0
             else:
                 actual_map[mous_y, mous_x] = 1
-            draw_map(screen, actual_map,
+            draw_map(screen, actual_map, paths,
                      cell_rows, cell_cols, cell_size,
                      heros_pos,
                      hero['step'],
@@ -237,6 +267,8 @@ while running:
                 continuous = True
             if event.key == pygame.K_d:
                 continuous = False
+            if event.key == pygame.K_z:
+                reverse_step = True
             if event.key == pygame.K_UP:
                 mods = pygame.key.get_mods()
                 if mods & pygame.KMOD_CTRL:
@@ -248,7 +280,7 @@ while running:
                 # draw_pixel_map(screen, actual_map, (hero['x'], hero['y']),
                 #                offset_x, offset_y)
                 draw_map(
-                    screen, actual_map,
+                    screen, actual_map, paths,
                     cell_rows, cell_cols, cell_size,
                     heros_pos,
                     hero['step'],
@@ -270,7 +302,7 @@ while running:
                 # draw_pixel_map(screen, actual_map, (hero['x'], hero['y']),
                 #                offset_x, offset_y)
                 draw_map(
-                    screen, actual_map,
+                    screen, actual_map, paths,
                     cell_rows, cell_cols, cell_size,
                     heros_pos,
                     hero['step'],
@@ -292,7 +324,7 @@ while running:
                 # draw_pixel_map(screen, actual_map, (hero['x'], hero['y']),
                 #                offset_x, offset_y)
                 draw_map(
-                    screen, actual_map,
+                    screen, actual_map, paths,
                     cell_rows, cell_cols, cell_size,
                     heros_pos,
                     hero['step'],
@@ -314,7 +346,7 @@ while running:
                 # draw_pixel_map(screen, actual_map, (hero['x'], hero['y']),
                 #                offset_x, offset_y)
                 draw_map(
-                    screen, actual_map,
+                    screen, actual_map, paths,
                     cell_rows, cell_cols, cell_size,
                     heros_pos,
                     hero['step'],
@@ -334,28 +366,18 @@ while running:
         if hero['step'] == -1:
             hero['step'] += 1
         elif hero['step'] < sol_length:
-            # clear hero position
-            # actual_map[hero["y"]][hero['x']] = 0
             # generate next_map
-            actual_map = next_step_map_convolve(actual_map)  # .copy())
-            # get hero new position
-            # if hero_moves[hero['step']] == 'U':
-            #     hero['y'] -= 1
-            # if hero_moves[hero['step']] == 'D':
-            #     hero['y'] += 1
-            # if hero_moves[hero['step']] == 'L':
-            #     hero['x'] -= 1
-            # if hero_moves[hero['step']] == 'R':
-            #     hero['x'] += 1
+            # actual_map = next_step_map_convolve(actual_map)  # .copy())
+            if hero['map'] + 1 > len(maps) - 1:
+                maps.append(next_step_map_convolve(maps[hero['map']]))
+            hero['map'] += 1
+            actual_map = maps[hero['map']]
             hero['step'] += 1
-            # actual_map[hero["y"]][hero['x']] = 2
-            # Fill the background with white
-        # screen.fill((255, 255, 255))
-        # draw the map
-        # draw_pixel_map(screen, actual_map, (hero['x'], hero['y']),
-        #                offset_x, offset_y)
+        if hero['step'] >= 0 and hero['step'] < len(heros_pos[0]['pos']):
+            hero['x'] = heros_pos[0]['pos'][hero['step']][1]
+            hero['y'] = heros_pos[0]['pos'][hero['step']][0]
         draw_map(
-                screen, actual_map,
+                screen, actual_map, paths,
                 cell_rows, cell_cols, cell_size,
                 heros_pos,
                 hero['step'],
@@ -369,6 +391,30 @@ while running:
             f' | off_x: {offset_x} | off_y: {offset_y}' +
             f' | particle pos: (r:{hero["y"]}, c:{hero["x"]})')
         step = False
+
+    if (reverse_step):
+        if hero['step'] > 0:
+            hero['step'] -= 1
+            hero['map'] -= 1
+            actual_map = maps[hero['map']]
+        if hero['step'] >= 0 and hero['step'] < len(heros_pos[0]['pos']):
+            hero['x'] = heros_pos[0]['pos'][hero['step']][1]
+            hero['y'] = heros_pos[0]['pos'][hero['step']][0]
+        draw_map(
+                screen, actual_map, paths,
+                cell_rows, cell_cols, cell_size,
+                heros_pos,
+                hero['step'],
+                font3,
+                offset_x, offset_y)
+
+        # Flip the display (render)
+        pygame.display.flip()
+        pygame.display.set_caption(
+            f'Solving: step: {hero["step"]}/{sol_length}' +
+            f' | off_x: {offset_x} | off_y: {offset_y}' +
+            f' | particle pos: (r:{hero["y"]}, c:{hero["x"]})')
+        reverse_step = False
 
     # generate framerate
     fpsClock.tick(fps)
