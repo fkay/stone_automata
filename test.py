@@ -17,7 +17,7 @@ def solution_test(init_map: np.array,
                   special: int = 0,
                   save_maps: bool = False,
                   old_particles: list = [],
-                  insert_t = 0) -> dict:
+                  insert_t: int = 0) -> dict:
     rows, cols = init_map.shape
 
     # init_solution = init_solution_3(init_map, special)
@@ -41,6 +41,10 @@ def solution_test(init_map: np.array,
     if init_lifes <= 1:
         next_map = init_map
     paths = [np.zeros(init_map.shape, np.int8)]
+
+    t0 = 0
+    while t0 < insert_t:
+        next_map = next_step_map_convolve(next_map)
 
     # %% find the paths to start
     paths[0][start_pos_y, start_pos_x] = init_lifes

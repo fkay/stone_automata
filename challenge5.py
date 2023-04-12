@@ -48,7 +48,7 @@ print(moves)
 #     file.write(moves)
 # print(f'Final pos: {solution["part_pos"][-1]}')
 
-with open(f'output5.txt{datetime.now().strftime(r"%Y%m%d_%H%M")}.txt',
+with open(f'output5{datetime.now().strftime(r"%Y%m%d_%H%M")}.txt',
           'w') as file:
     for p in part_moves:
         file.write(str(p['t']) + ' ')
