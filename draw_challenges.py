@@ -122,7 +122,7 @@ def draw_pixel_map(screen: pygame.Surface, map: np.array,
     pixel_array.close()
 
 
-solution_file_path = r'output5_20230412_1459.txt'
+solution_file_path = r'output5_20230413_1258.txt'
 # solution_file_path = r'solution_20230330_1931.txt'
 # missing_part = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 #                 [1, 0, 0, 0, 0, 0, 1, 0, 0, 1],
@@ -142,8 +142,8 @@ init_map = load_init_map('inputs/input5.txt')
 # init_map[-1, -1] = 4
 
 # load the path desired to track (saved with numpy savez)
-paths = np.load('outputs/paths_34.npz')['paths']
-# path = None
+# paths = np.load('outputs/paths_34.npz')['paths']
+paths = None
 
 # %% Prepare pygame
 # Pygame Configuration
@@ -210,8 +210,15 @@ sol_length = max_sol_length
 print(f'Solution length:  {sol_length}')
 draw_text(screen, font2, (255, 128, 0), 'Space - Single Step',
           width // 2, height // 2 + 30)
-draw_text(screen, font2, (255, 128, 0), 'A - hold for continous move',
+draw_text(screen, font2, (255, 128, 0), 'Z - Back Single Step',
           width // 2, height // 2 + 60)
+draw_text(screen, font2, (255, 128, 0), 'A - hold for continous move',
+          width // 2, height // 2 + 90)
+draw_text(screen, font2, (255, 128, 0), 'S - Start / D - Stop continous move',
+          width // 2, height // 2 + 120)
+draw_text(screen, font2, (255, 128, 0),
+          'Arrows - move over map (CTRL + Arrow - bigger step)',
+          width // 2, height // 2 + 150)
 pygame.display.flip()
 
 # %% Game loop
